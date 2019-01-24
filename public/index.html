@@ -1,0 +1,137 @@
+<html>
+<head>
+    <meta charset="UTF-8">
+    <title>Chat</title>
+    <style>
+        #chat {
+            width: 600px;
+            margin: auto;
+        }
+
+        #message-box {
+            overflow: auto;
+            border: 1px solid #000;
+            max-height: 400px;
+        }
+
+        #input-box {
+            display: flex;
+        }
+
+        #new-message {
+            width: 100%;
+        }
+
+        .message {
+            padding: 10px 5px;
+            display: flex;
+            align-items: baseline;
+        }
+
+        .message .sender {
+            padding-right: 5px;
+            font-weight: bold;
+            width: 70px;
+            flex-shrink: 0;
+            text-align: right;
+        }
+
+        .message .text {
+            flex-grow: 1;
+        }
+
+        .message .time {
+            font-size: 0.8em;
+            width: 50px;
+            flex-shrink: 0;
+            text-align: right;
+        }
+
+        .message:nth-child(2n) {
+            background: #eee;
+        }
+    </style>
+</head>
+<body>
+<div id="chat">
+    <div id="message-box"></div>
+    <form id="input-box">
+        <input type="text" id="new-message">
+        <button type="submit" id="send-message">Отправить</button>
+    </form>
+</div>
+<script>
+    function addMessage(message, time, sender) {
+        const messageBox = document.getElementById('message-box');
+
+        const messageBlock = document.createElement('div');
+        messageBlock.classList.add('message');
+
+        if (sender) {
+            const senderBlock = document.createElement('div');
+            senderBlock.classList.add('sender');
+            senderBlock.innerHTML = sender;
+            messageBlock.appendChild(senderBlock);
+        }
+
+        const textBlock = document.createElement('div');
+        textBlock.classList.add('text');
+        textBlock.innerHTML = message;
+        messageBlock.appendChild(textBlock);
+
+        const timeBlock = document.createElement('div');
+        timeBlock.classList.add('time');
+        timeBlock.innerHTML = formatTime(time);
+        messageBlock.appendChild(timeBlock);
+
+        messageBox.appendChild(messageBlock);
+        messageBox.scrollTop = messageBox.scrollHeight;
+    }
+
+    function formatTime(time) {
+        const date = new Date(time);
+
+        return [date.getHours(), date.getMinutes()].map(v => v < 10 ? ['0', v].join('') : v).join(':');
+    }
+
+    function sendMessage(message) {
+        connection.send(message);
+    }
+
+    document.getElementById('input-box').addEventListener('submit', e => {
+        e.preventDefault();
+
+        const messageField = document.getElementById('new-message');
+        const text = messageField.value;
+
+        if (!text) {
+            return;
+        }
+
+        sendMessage(text);
+        messageField.value = '';
+    });
+
+    const connection = new WebSocket('ws://localhost:8080');
+
+    connection.onopen = () => console.log("Connection established!");
+    connection.onmessage = e => {
+        const message = JSON.parse(e.data);
+
+        switch (message.type) {
+            case 'connect':
+                addMessage(`User ${message.client.name} is connected`, message.time);
+                break;
+            case 'disconnect':
+                addMessage(`User ${message.client.name} is disconnected`, message.time);
+                break;
+            case 'message':
+                addMessage(message.text, message.time, message.client.name);
+                break;
+            default:
+                console.log(`Invalid type ${message.type}`);
+        }
+    }
+</script>
+</body>
+</html>
