@@ -120,10 +120,10 @@
 
         switch (message.type) {
             case 'connect':
-                addMessage(`User ${message.client.name} is connected`, message.time);
+                addMessage(`${message.client.name} is connected`, message.time);
                 break;
             case 'disconnect':
-                addMessage(`User ${message.client.name} is disconnected`, message.time);
+                addMessage(`${message.client.name} is disconnected`, message.time);
                 break;
             case 'message':
                 addMessage(message.text, message.time, message.client.name);
