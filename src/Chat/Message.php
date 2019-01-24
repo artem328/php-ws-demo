@@ -38,6 +38,21 @@ class Message implements MessageInterface
         $this->time = $time ?? new \DateTimeImmutable();
     }
 
+    public static function connect(ClientInterface $client): Message
+    {
+        return new Message(MessageInterface::TYPE_CONNECT, $client);
+    }
+
+    public static function disconnect(ClientInterface $client): Message
+    {
+        return new Message(MessageInterface::TYPE_DISCONNECT, $client);
+    }
+
+    public static function message(ClientInterface $client, string $text): Message
+    {
+        return new Message(MessageInterface::TYPE_MESSAGE, $client, $text);
+    }
+
     /**
      * {@inheritdoc}
      */

@@ -15,7 +15,7 @@ chown -R www-data \
     var/ \
     vendor/ \
     .env \
-    .env.dist \
+    .env.local \
     composer.json \
     composer.lock \
     symfony.lock

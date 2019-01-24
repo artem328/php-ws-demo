@@ -22,4 +22,11 @@ final class MessageSender
     {
         $client->send($this->serializer->serialize($message, 'json'));
     }
+
+    public function sendMessageToClients(ClientStorage $clients, MessageInterface $message): void
+    {
+        foreach ($clients as $client) {
+            $this->sendMessageToClient($client, $message);
+        }
+    }
 }

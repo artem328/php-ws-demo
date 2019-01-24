@@ -4,32 +4,20 @@ declare(strict_types=1);
 
 namespace App\Ratchet\Command;
 
+use App\Command\AbstractServerRunCommand;
 use App\Ratchet\Chat;
 use Ratchet\Http\HttpServer;
 use Ratchet\Server\IoServer;
 use Ratchet\WebSocket\WsServer;
-use Symfony\Component\Console\Command\Command;
-use Symfony\Component\Console\ConsoleEvents;
-use Symfony\Component\Console\Event\ConsoleEvent;
 use Symfony\Component\Console\Input\InputInterface;
-use Symfony\Component\Console\Input\InputOption;
 use Symfony\Component\Console\Output\OutputInterface;
-use Symfony\Component\EventDispatcher\EventDispatcherInterface;
-use Symfony\Component\EventDispatcher\EventSubscriberInterface;
 
-final class ServerRunCommand extends Command implements EventSubscriberInterface
+final class ServerRunCommand extends AbstractServerRunCommand
 {
-    private const DEFAULT_PORT = 8080;
-
     /**
      * @var Chat
      */
     private $chat;
-
-    /**
-     * @var EventDispatcherInterface
-     */
-    private $eventDispatcher;
 
     /**
      * @var IoServer|null
@@ -39,10 +27,9 @@ final class ServerRunCommand extends Command implements EventSubscriberInterface
     /**
      * {@inheritdoc}
      */
-    public function __construct(Chat $chat, EventDispatcherInterface $eventDispatcher)
+    public function __construct(Chat $chat)
     {
         $this->chat = $chat;
-        $this->eventDispatcher = $eventDispatcher;
 
         parent::__construct();
     }
@@ -50,21 +37,13 @@ final class ServerRunCommand extends Command implements EventSubscriberInterface
     /**
      * {@inheritdoc}
      */
-    public static function getSubscribedEvents(): array
-    {
-        return [
-            ConsoleEvents::TERMINATE => 'closeConnection',
-            ConsoleEvents::ERROR => 'closeConnection',
-        ];
-    }
-
-    public function closeConnection(ConsoleEvent $event): void
+    protected function onTerminate(OutputInterface $output): void
     {
         if (null === $this->server) {
             return;
         }
 
-        $event->getOutput()->writeln('Stopping server');
+        $output->writeln('Stopping server');
 
         $this->server->loop->stop();
     }
@@ -72,13 +51,9 @@ final class ServerRunCommand extends Command implements EventSubscriberInterface
     /**
      * {@inheritdoc}
      */
-    protected function configure(): void
+    protected function getCommandNamePrefix(): string
     {
-        $this->setName('ratchet:server:run')
-            ->addOption('port', 'p', InputOption::VALUE_REQUIRED, 'Port, server will be started on', self::DEFAULT_PORT)
-        ;
-
-        $this->eventDispatcher->addSubscriber($this);
+        return 'ratchet';
     }
 
     /**

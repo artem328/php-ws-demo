@@ -6,8 +6,8 @@ namespace App\Ratchet;
 
 use App\Chat\ClientStorage;
 use App\Chat\Message;
-use App\Chat\MessageInterface;
 use App\Chat\MessageSender;
+use App\Chat\NameGeneratorInterface;
 use Ratchet\ConnectionInterface;
 use Ratchet\MessageComponentInterface;
 
@@ -28,32 +28,40 @@ final class Chat implements MessageComponentInterface
      */
     private $messageSender;
 
-    public function __construct(MessageSender $messageSender)
+    /**
+     * @var NameGeneratorInterface
+     */
+    private $nameGenerator;
+
+    public function __construct(MessageSender $messageSender, NameGeneratorInterface $nameGenerator)
     {
         $this->clients = new ClientStorage();
         $this->messageSender = $messageSender;
+        $this->nameGenerator = $nameGenerator;
     }
 
     /**
      * {@inheritdoc}
      */
-    function onOpen(ConnectionInterface $conn): void
+    public function onOpen(ConnectionInterface $conn): void
     {
-        $connectedClient = new Client($this->getConnectionId($conn), sprintf('User %d', self::$count++), $conn);
+        $connectedClient = new Client(
+            $this->getConnectionId($conn),
+            $this->nameGenerator->generateName(),
+            $conn
+        );
 
         $this->clients->addClient($connectedClient);
 
-        $message = new Message(MessageInterface::TYPE_CONNECT, $connectedClient);
+        $message = Message::connect($connectedClient);
 
-        foreach ($this->clients as $client) {
-            $this->messageSender->sendMessageToClient($client, $message);
-        }
+        $this->messageSender->sendMessageToClients($this->clients, $message);
     }
 
     /**
      * {@inheritdoc}
      */
-    function onClose(ConnectionInterface $conn): void
+    public function onClose(ConnectionInterface $conn): void
     {
         $disconnectedClient = $this->clients->getById($this->getConnectionId($conn));
 
@@ -63,24 +71,22 @@ final class Chat implements MessageComponentInterface
 
         $this->clients->removeClient($disconnectedClient);
 
-        $message = new Message(MessageInterface::TYPE_DISCONNECT, $disconnectedClient);
+        $message = Message::disconnect($disconnectedClient);
 
-        foreach ($this->clients as $client) {
-            $this->messageSender->sendMessageToClient($client, $message);
-        }
+        $this->messageSender->sendMessageToClients($this->clients, $message);
     }
 
     /**
      * {@inheritdoc}
      */
-    function onError(ConnectionInterface $conn, \Exception $e): void
+    public function onError(ConnectionInterface $conn, \Exception $e): void
     {
     }
 
     /**
      * {@inheritdoc}
      */
-    function onMessage(ConnectionInterface $from, $msg): void
+    public function onMessage(ConnectionInterface $from, $msg): void
     {
         $sender = $this->clients->getById($this->getConnectionId($from));
 
@@ -88,11 +94,9 @@ final class Chat implements MessageComponentInterface
             return;
         }
 
-        $message = new Message(MessageInterface::TYPE_MESSAGE, $sender, $msg);
+        $message = Message::message($sender, htmlentities($msg));
 
-        foreach ($this->clients as $client) {
-            $this->messageSender->sendMessageToClient($client, $message);
-        }
+        $this->messageSender->sendMessageToClients($this->clients, $message);
     }
 
     private function getConnectionId(ConnectionInterface $connection): string
