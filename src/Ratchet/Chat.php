@@ -14,11 +14,6 @@ use Ratchet\MessageComponentInterface;
 final class Chat implements MessageComponentInterface
 {
     /**
-     * @var int
-     */
-    private static $count = 1;
-
-    /**
      * @var ClientStorage
      */
     private $clients;
