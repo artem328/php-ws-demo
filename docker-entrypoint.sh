@@ -6,7 +6,7 @@ else
     composer install --prefer-dist --no-progress --no-suggest --no-interaction
 fi
 
-chown -R www-data \
+chown -R ${HOST_UID} \
     bin/ \
     config/ \
     public/ \
@@ -19,4 +19,5 @@ chown -R www-data \
     composer.json \
     composer.lock \
     symfony.lock
-php-fpm
+
+sh

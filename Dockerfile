@@ -1,6 +1,22 @@
-FROM 4xxi/php:flex
+FROM php:7.2-alpine
 
-RUN apt-get update; exit 0;
+RUN apk update && apk add \
+    git \
+    icu-dev \
+    zlib-dev \
+    $PHPIZE_DEPS
+
+RUN docker-php-ext-install \
+    bcmath \
+    intl \
+    opcache \
+    zip
+
+# https://getcomposer.org/doc/03-cli.md#composer-allow-superuser
+ENV COMPOSER_ALLOW_SUPERUSER 1
+
+RUN curl -sS https://getcomposer.org/installer | php -- --install-dir=/usr/local/bin --filename=composer \
+    && chmod +x /usr/local/bin/composer
 
 RUN git clone https://github.com/swoole/swoole-src.git \
     && cd swoole-src \
@@ -11,5 +27,9 @@ RUN git clone https://github.com/swoole/swoole-src.git \
 
 RUN echo 'extension=swoole.so' > /usr/local/etc/php/conf.d/swoole.ini
 
-COPY docker-entrypoint.sh /opt/docker-entrypoint.sh
+ARG HOST_USER_ID=1000
+ENV HOST_UID=$HOST_USER_ID
+
+WORKDIR /var/www/html
+
 ENTRYPOINT ./docker-entrypoint.sh
