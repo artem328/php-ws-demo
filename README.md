@@ -20,4 +20,4 @@ bin/console list | grep server:run
 ```
 to see available server commands
 
-After you run on of the servers, open `public/index.html` in your browser
+After you run one of the servers, open `public/index.html` in your browser
